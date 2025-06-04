@@ -1,4 +1,11 @@
-import { INodeType, INodeTypeDescription, NodeConnectionType } from 'n8n-workflow';
+import {
+	INodeExecutionData,
+	INodeType,
+	INodeTypeDescription,
+	IExecuteFunctions,
+	NodeConnectionType,
+	IRequestOptions,
+} from 'n8n-workflow';
 
 export class FullEnrich implements INodeType {
 	description: INodeTypeDescription = {
@@ -93,29 +100,6 @@ export class FullEnrich implements INodeType {
                         value: 'start',
                         action: 'Start a new enrichment',
                         description: 'Start a new enrichment',
-                        routing: {
-                            request: {
-                                method: 'POST',
-                                url: 'v1/contact/enrich/bulk',
-                                body: {
-                                    name: 'Test Name',
-                                    webhook_url: '={{$parameter.webhook_url}}',
-                                    datas: [
-                                        {
-                                            firstname: '={{$parameter.firstname}}',
-                                            lastname: '={{$parameter.lastname}}',
-                                            domain: '={{$parameter.domain}}',
-                                            linkedin_url: '={{$parameter.linkedin_url}}',
-                                            company_name: '={{$parameter.company_name}}',
-                                            enrich_fields: [
-                                              'contact.emails',
-                                              'contact.phones'
-                                            ]
-                                        }
-                                    ]
-                                },
-                            },
-                        },
                     },
                 ],
                 default: 'start',
@@ -220,4 +204,63 @@ export class FullEnrich implements INodeType {
 			},
         ]
 	};
+	// The execute method will go here
+	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+		// Handle data coming from previous nodes
+		const items = this.getInputData();
+		let responseData;
+		const returnData = [];
+		const resource = this.getNodeParameter('resource', 0) as string;
+		const operation = this.getNodeParameter('operation', 0) as string;
+
+		// For each item, make an API call
+		for (let i = 0; i < items.length; i++) {
+			if (resource === 'enrichment') {
+				if (operation === 'start') {
+					// Get all required parameters
+					const enrichmentName = this.getNodeParameter('enrichment_name', i) as string;
+					const webhookUrl = this.getNodeParameter('webhook_url', i) as string;
+					const firstname = this.getNodeParameter('firstname', i) as string;
+					const lastname = this.getNodeParameter('lastname', i) as string;
+					const domain = this.getNodeParameter('domain', i) as string;
+					const linkedinUrl = this.getNodeParameter('linkedin_url', i) as string;
+					const companyName = this.getNodeParameter('company_name', i) as string;
+
+					// Make HTTP request
+					const options: IRequestOptions = {
+						headers: {
+							'Accept': 'application/json',
+							'Content-Type': 'application/json',
+						},
+						method: 'POST',
+						body: {
+							name: enrichmentName,
+							webhook_url: webhookUrl,
+							datas: [
+								{
+									firstname,
+									lastname,
+									domain,
+									linkedin_url: linkedinUrl,
+									company_name: companyName,
+									enrich_fields: [
+										'contact.emails',
+										'contact.phones'
+									]
+								}
+							]
+						},
+						uri: `http://localhost:6543/api/v1/contact/enrich/bulk`,
+						json: true,
+					};
+
+					responseData = await this.helpers.requestWithAuthentication.call(this, 'FullEnrichAPI', options);
+					returnData.push(responseData);
+				}
+			}
+		}
+
+		// Map data to n8n data structure
+		return [this.helpers.returnJsonArray(returnData)];
+	}
 }
