@@ -2,25 +2,34 @@ import {
 	IAuthenticateGeneric,
 	ICredentialType,
 	INodeProperties,
+	ICredentialTestRequest,
 } from 'n8n-workflow';
 
-export class FullEnrichAPI implements ICredentialType {
-	name = 'FullEnrichAPI';
+export class FullEnrichApi implements ICredentialType {
+	name = 'fullEnrichApi';
 	displayName = 'FullEnrich API';
-	// Uses the link to this tutorial as an example
-	// Replace with your own docs links when building your own nodes
-	documentationUrl = 'https://docs.n8n.io/integrations/creating-nodes/build/declarative-style-node/';
+	documentationUrl = 'https://docs.fullenrich.com/authentication';
 	properties: INodeProperties[] = [
 		{
 			displayName: 'API Key',
 			name: 'apiKey',
 			type: 'string',
+			typeOptions: { password: true },
 			default: '',
 		},
 	];
 	authenticate: IAuthenticateGeneric = {
 		type: 'generic',
 		properties: {
+			headers: {
+				Authorization: '=Bearer {{$credentials.apiKey}}',
+			},
+		},
+	};
+	test: ICredentialTestRequest = {
+		request: {
+			baseURL: 'http://localhost:6543/api',
+			url: '/v1/account/keys/verify',
 			headers: {
 				Authorization: '=Bearer {{$credentials.apiKey}}',
 			},

@@ -8,6 +8,8 @@ import {
 	NodeConnectionType,
 } from 'n8n-workflow';
 
+import { fullEnrichFields } from './FullEnrich.properties';
+
 export class FullEnrich implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'FullEnrich',
@@ -21,7 +23,7 @@ export class FullEnrich implements INodeType {
 		},
 		credentials: [
 			{
-				name: 'FullEnrichAPI',
+				name: 'fullEnrichApi',
 				required: true,
 			},
 		],
@@ -35,70 +37,10 @@ export class FullEnrich implements INodeType {
 				path: 'enrich-callback',
 			},
 		],
-		properties: [
-			{
-				displayName: 'Enrichment Name',
-				name: 'enrichmentName',
-				type: 'string',
-				required: true,
-				default: '',
-			},
-			{
-				displayName: 'First Name',
-				name: 'firstName',
-				type: 'string',
-				required: true,
-				default: '',
-			},
-			{
-				displayName: 'Last Name',
-				name: 'lastName',
-				type: 'string',
-				required: true,
-				default: '',
-			},
-			{
-				displayName: 'Domain',
-				name: 'domain',
-				type: 'string',
-				required: true,
-				default: '',
-			},
-			{
-				displayName: 'Company Name',
-				name: 'companyName',
-				type: 'string',
-				required: true,
-				default: '',
-			},
-			{
-				displayName: 'LinkedIn URL',
-				name: 'linkedinUrl',
-				type: 'string',
-				required: true,
-				default: '',
-			},
-			{
-				displayName: 'Enrich Fields',
-				name: 'enrichFields',
-				type: 'multiOptions',
-				required: true,
-				default: ['contact.emails', 'contact.phones'],
-				options: [
-					{
-						name: 'Contact Emails',
-						value: 'contact.emails',
-					},
-					{
-						name: 'Contact Phones',
-						value: 'contact.phones',
-					},
-				],
-			},
-		],
+		properties: fullEnrichFields,
 	};
 
-	// Handle the webhook call from your enrichment service
+	// Handle the webhook call from the FullEnrich service
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const body = this.getBodyData();
 		
@@ -110,7 +52,7 @@ export class FullEnrich implements INodeType {
 			workflowData: [
 				[
 					{
-						json: body, // you could also process this further before returning
+						json: body,
 					},
 				],
 			],
@@ -125,32 +67,45 @@ export class FullEnrich implements INodeType {
 
 			// Triggered when the node is activated (or workflow runs)
 			async create(this: IHookFunctions): Promise<boolean> {
-				const enrichmentName = this.getNodeParameter('enrichmentName', 0) as string;
-				const firstName = this.getNodeParameter('firstName', 0) as string;
-				const lastName = this.getNodeParameter('lastName', 0) as string;
-				const domain = this.getNodeParameter('domain', 0) as string;
-				const companyName = this.getNodeParameter('companyName', 0) as string;
-				const linkedinUrl = this.getNodeParameter('linkedinUrl', 0) as string;
-				const enrichFields = this.getNodeParameter('enrichFields', 0) as string[];
 
-				const webhookUrl = this.getNodeWebhookUrl('default');
+			// Get the enrichment name
+			const enrichmentName = this.getNodeParameter('enrichmentName', 0) as string;
 
-				const requestBody = {
-					name: enrichmentName,
-					webhook_url: webhookUrl,
-					datas: [
-						{
-							firstname: firstName,
-							lastname: lastName,
-							domain,
-							company_name: companyName,
-							linkedin_url: linkedinUrl,
-							enrich_fields: enrichFields,
-						},
-					],
-				};
+			// Get the contact info fixedCollection parameter
+			const contact = this.getNodeParameter('contact', 0) as {
+			fields: Array<{
+				firstName: string;
+				lastName: string;
+				domain: string;
+				companyName: string;
+				linkedinUrl: string;
+			}>;
+			};
 
-				await this.helpers.httpRequestWithAuthentication?.call(this, 'FullEnrichAPI', {
+			// Extract the array of contacts from the 'fields' property
+			const enrichmentRequest = contact.fields;
+
+			// Get the fields to enrich (multiOptions)
+			const enrichFields = this.getNodeParameter('enrichFields', 0) as string[];
+
+			// Get the webhook URL for the callback
+			const webhookUrl = this.getNodeWebhookUrl('default');
+
+			// Build the request body for the enrichment API
+			const requestBody = {
+			name: enrichmentName,
+			webhook_url: webhookUrl,
+			datas: enrichmentRequest.map(enrichmentRequest => ({
+				firstname: enrichmentRequest.firstName,
+				lastname: enrichmentRequest.lastName,
+				domain: enrichmentRequest.domain,
+				company_name: enrichmentRequest.companyName,
+				linkedin_url: enrichmentRequest.linkedinUrl,
+				enrich_fields: enrichFields,
+			})),
+			}
+
+				await this.helpers.httpRequestWithAuthentication?.call(this, 'fullEnrichApi', {
 					method: 'POST',
 					url: 'http://localhost:6543/api/v1/contact/enrich/bulk',
 					body: requestBody,
