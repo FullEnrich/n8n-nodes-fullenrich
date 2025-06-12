@@ -1,0 +1,17 @@
+{
+	"node": "n8n-nodes-base.EnrichmentResultTrigger",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": [
+		"Contacts",
+		"Enrichment",
+		"Trigger"
+	],
+	"resources": {
+		"primaryDocumentation": [
+			{
+				"url": "https://docs.fullenrich.com/startbulk"
+			}
+		]
+	}
+}

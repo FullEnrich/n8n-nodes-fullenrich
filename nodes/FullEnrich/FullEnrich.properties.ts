@@ -10,6 +10,14 @@ export const fullEnrichFields: INodeProperties[] = [
 		description: 'A unique name for this enrichment task.',
 	},
 	{
+		displayName: 'Webhook URL',
+		name: 'webhookUrl',
+		type: 'string',
+		required: true,
+		default: '',
+		description: 'The URL to receive the enrichment result.',
+	},
+	{
 		displayName: 'Contact',
 		name: 'contact',
 		type: 'fixedCollection',
