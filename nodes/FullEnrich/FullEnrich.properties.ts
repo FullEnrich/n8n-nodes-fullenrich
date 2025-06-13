@@ -2,6 +2,39 @@ import { INodeProperties } from 'n8n-workflow';
 
 export const fullEnrichFields: INodeProperties[] = [
 	{
+		displayName: 'Resource',
+		name: 'resource',
+		type: 'options',
+		noDataExpression: true,
+		options: [
+			{
+				name: 'Enrichment',
+				value: 'enrichment',
+			}
+		],
+		default: 'record',
+	},
+	{
+		displayName: 'Operation',
+		name: 'operation',
+		type: 'options',
+		noDataExpression: true,
+		options: [
+			{
+				name: 'Start Enrichment',
+				value: 'startEnrichment',
+				description: 'Start an enrichment task',
+				action: 'Start enrichment',
+			}
+		],
+		default: 'startEnrichment',
+		displayOptions: {
+			show: {
+				resource: ['enrichment'],
+			},
+		},
+	},
+	{
 		displayName: 'Enrichment Name',
 		name: 'enrichmentName',
 		type: 'string',

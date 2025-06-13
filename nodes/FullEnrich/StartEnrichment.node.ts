@@ -10,14 +10,17 @@ import { fullEnrichFields } from './FullEnrich.properties';
 
 export class StartEnrichment implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Start Enrichment',
-		name: 'startEnrichment',
-		icon: 'file:fullenrich.svg',
-		group: ['transform'],
+		displayName: 'FullEnrich',
+		name: 'fullEnrich',
+		icon: {
+			light: 'file:fe-logo-light.svg',
+			dark: 'file:fe-logo-dark.svg',
+		  },
+		group: ['action'],
 		version: 1,
 		description: 'Start a FullEnrich bulk enrichment request',
 		defaults: {
-			name: 'Start Enrichment',
+			name: 'FullEnrich',
 		},
 		credentials: [
 			{
@@ -33,51 +36,81 @@ export class StartEnrichment implements INodeType {
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
-	
-		for (let i = 0; i < items.length; i++) {
-			const item = items[i];
-	
-			// Allow enrichmentName from input OR form
-			const enrichmentName = item.json.enrichmentName as string
-				?? this.getNodeParameter('enrichmentName', i) as string;
-	
-			// Allow webhookUrl from input OR form
-			const webhookUrl = item.json.webhookUrl as string
-				?? this.getNodeParameter('webhookUrl', i) as string;
-	
-			// Allow enrichFields from input OR form
-			const enrichFields = item.json.enrichFields as string[]
-				?? this.getNodeParameter('enrichFields', i) as string[];
-	
-			// Allow contact from input OR form
-			const contact = item.json.contact as { fields: any[] }
-				?? this.getNodeParameter('contact', i) as { fields: any[] };
-	
-			// Build request body
-			const requestBody = {
-				name: enrichmentName,
-				webhook_url: webhookUrl,
-				datas: contact.fields.map(c => ({
-					firstname: c.firstName,
-					lastname: c.lastName,
-					domain: c.domain,
-					company_name: c.companyName,
-					linkedin_url: c.linkedinUrl,
-					enrich_fields: enrichFields,
-				})),
+
+		// Shared/default values from form
+		const enrichmentName = this.getNodeParameter('enrichmentName', 0) as string;
+		const webhookUrl = this.getNodeParameter('webhookUrl', 0) as string;
+		const enrichFieldsDefault = this.getNodeParameter('enrichFields', 0) as string[];
+
+
+
+		// Get contacts from the form
+		const formContacts = (
+			this.getNodeParameter('contact', 0, false) as {
+				fields: Array<{
+					firstName: string;
+					lastName: string;
+					domain: string;
+					companyName: string;
+					linkedinUrl: string;
+				}>;
+			}
+		)?.fields ?? [];
+
+		// Transform form contacts
+		const contactsFromForm = formContacts.map((c) => ({
+			firstname: c.firstName,
+			lastname: c.lastName,
+			domain: c.domain,
+			company_name: c.companyName,
+			linkedin_url: c.linkedinUrl,
+			enrich_fields: enrichFieldsDefault,
+		}));
+
+		// Transform input contacts
+		const contactsFromInput = items.length > 1 ? items.map(item => {
+			const contact = item.json as {
+				firstname: string;
+				lastname: string;
+				company?: string;
+				linkedin_url?: string;
+				row_number?: number | string;
 			};
-	
-			// Send to FullEnrich API
-			await this.helpers.httpRequestWithAuthentication?.call(this, 'fullEnrichApi', {
-				method: 'POST',
-				url: 'http://localhost:6543/api/v1/contact/enrich/bulk',
-				body: requestBody,
-				json: true,
-			});
-	
-			returnData.push({ json: { success: true, webhook_url: webhookUrl } });
-		}
-	
+
+			return {
+				firstname: contact.firstname,
+				lastname: contact.lastname,
+				domain: contact.company,
+				company_name: contact.company,
+				linkedin_url: contact.linkedin_url,
+				enrich_fields: enrichFieldsDefault,
+				// custom: {
+				// 	row_number: contact.row_number ? String(contact.row_number) : undefined,
+				// }
+			};
+		}) : [];
+
+		// Merge both
+		const allContacts = [...contactsFromForm, ...contactsFromInput];
+				
+		// Build request body with all contacts
+		const requestBody = {
+			name: enrichmentName,
+			webhook_url: webhookUrl,
+			datas: allContacts,
+		};
+
+		// Send single batch request
+		await this.helpers.httpRequestWithAuthentication?.call(this, 'fullEnrichApi', {
+			method: 'POST',
+			url: 'http://localhost:6543/api/v1/contact/enrich/bulk',
+			body: requestBody,
+			json: true,
+		});
+
+		// One return item for the batch
+		returnData.push({ json: { success: true, sent: allContacts.length, webhook_url: webhookUrl } });
+
 		return [returnData];
 	}
 }
