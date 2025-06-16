@@ -41,8 +41,8 @@ export class StartEnrichment implements INodeType {
 		const enrichmentName = this.getNodeParameter('enrichmentName', 0) as string;
 		const webhookUrl = this.getNodeParameter('webhookUrl', 0) as string;
 		const enrichFieldsDefault = this.getNodeParameter('enrichFields', 0) as string[];
-
-
+		const customFields = this.getNodeParameter('customFields', 0) as string;
+		
 
 		// Get contacts from the form
 		const formContacts = (
@@ -74,8 +74,16 @@ export class StartEnrichment implements INodeType {
 				lastname: string;
 				company?: string;
 				linkedin_url?: string;
-				row_number?: number | string;
+				[key: string]: any; // To access dynamic fields like customFields
 			};
+
+
+			const customFieldValueRaw = contact[customFields];
+			const customFieldValue = customFieldValueRaw !== undefined && customFieldValueRaw !== null
+				? String(customFieldValueRaw)
+				: ''; // Default to empty string if missing/null
+
+
 
 			return {
 				firstname: contact.firstname,
@@ -84,9 +92,9 @@ export class StartEnrichment implements INodeType {
 				company_name: contact.company,
 				linkedin_url: contact.linkedin_url,
 				enrich_fields: enrichFieldsDefault,
-				// custom: {
-				// 	row_number: contact.row_number ? String(contact.row_number) : undefined,
-				// }
+				custom: {
+					[customFields]: customFieldValue
+				}
 			};
 		}) : [];
 

@@ -51,6 +51,14 @@ export const fullEnrichFields: INodeProperties[] = [
 		description: 'The URL to receive the enrichment result.',
 	},
 	{
+		displayName: 'Custom Fields',
+		name: 'customFields',
+		type: 'string',
+		required: false,
+		default: '',
+		description: 'The custom fields to be enriched.',
+	},
+	{
 		displayName: 'Contact',
 		name: 'contact',
 		type: 'fixedCollection',
@@ -59,17 +67,7 @@ export const fullEnrichFields: INodeProperties[] = [
 			multipleValues: true,
 		},
 		placeholder: 'Add Contact',
-		default: {
-		  fields: [
-			{
-			  firstName: 'john',
-			  lastName: 'snow',
-			  domain: 'example.com',
-			  companyName: 'Example Inc.',
-			  linkedinUrl: 'https://www.linkedin.com/in/demoge/',
-			},
-		  ],
-		},
+		default: null,
 		options: [
 			{
 				displayName: 'Fields',
