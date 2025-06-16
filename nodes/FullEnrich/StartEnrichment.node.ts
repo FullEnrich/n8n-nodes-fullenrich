@@ -76,26 +76,30 @@ export class StartEnrichment implements INodeType {
 				linkedin_url?: string;
 				[key: string]: any; // To access dynamic fields like customFields
 			};
-
-
+			
 			const customFieldValueRaw = contact[customFields];
-			const customFieldValue = customFieldValueRaw !== undefined && customFieldValueRaw !== null
-				? String(customFieldValueRaw)
-				: ''; // Default to empty string if missing/null
-
-
-
-			return {
+			const shouldIncludeCustom = customFields && customFieldValueRaw !== undefined && customFieldValueRaw !== null && customFieldValueRaw !== '';
+		
+			const baseContact = {
 				firstname: contact.firstname,
 				lastname: contact.lastname,
 				domain: contact.company,
 				company_name: contact.company,
 				linkedin_url: contact.linkedin_url,
 				enrich_fields: enrichFieldsDefault,
-				custom: {
-					[customFields]: customFieldValue
-				}
 			};
+		
+			// Conditionally add custom field if valid
+			if (shouldIncludeCustom) {
+				return {
+					...baseContact,
+					custom: {
+						[customFields]: String(customFieldValueRaw),
+					},
+				};
+			} else {
+				return baseContact;
+			}
 		}) : [];
 
 		// Merge both
