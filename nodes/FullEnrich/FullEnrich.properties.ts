@@ -53,10 +53,29 @@ export const fullEnrichFields: INodeProperties[] = [
 	{
 		displayName: 'Custom Fields',
 		name: 'customFields',
-		type: 'string',
-		required: false,
-		default: '',
-		description: 'The custom fields to be enriched.',
+		type: 'fixedCollection',
+		typeOptions: {
+			multipleValues: true,
+		},
+		default: {},
+		placeholder: 'Add custom field',
+		options: [
+			{
+				displayName: 'Field',
+				name: 'field',
+				values: [
+					{
+						displayName: 'Key',
+						name: 'key',
+						type: 'string',
+						default: '',
+						placeholder: 'e.g. row_number',
+						description: 'Custom field name to extract from input data',
+					},
+				],
+			},
+		],
+		description: 'Specify keys to extract from input data as custom fields',
 	},
 	{
 		displayName: 'Contact',

@@ -41,7 +41,13 @@ export class StartEnrichment implements INodeType {
 		const enrichmentName = this.getNodeParameter('enrichmentName', 0) as string;
 		const webhookUrl = this.getNodeParameter('webhookUrl', 0) as string;
 		const enrichFieldsDefault = this.getNodeParameter('enrichFields', 0) as string[];
-		const customFields = this.getNodeParameter('customFields', 0) as string;
+
+		
+		const rawCustomFields = this.getNodeParameter('customFields', 0) as {
+			field: Array<{ key: string }>
+		};
+		
+		const customFieldKeys = rawCustomFields?.field?.map(f => f.key).filter(Boolean) ?? [];
 		
 
 		// Get contacts from the form
@@ -67,18 +73,14 @@ export class StartEnrichment implements INodeType {
 			enrich_fields: enrichFieldsDefault,
 		}));
 
-		// Transform input contacts
-		const contactsFromInput = items.length > 1 ? items.map(item => {
+		const contactsFromInput = items.map(item => {
 			const contact = item.json as {
 				firstname: string;
 				lastname: string;
 				company?: string;
 				linkedin_url?: string;
-				[key: string]: any; // To access dynamic fields like customFields
+				[key: string]: any; // to access dynamic fields
 			};
-			
-			const customFieldValueRaw = contact[customFields];
-			const shouldIncludeCustom = customFields && customFieldValueRaw !== undefined && customFieldValueRaw !== null && customFieldValueRaw !== '';
 		
 			const baseContact = {
 				firstname: contact.firstname,
@@ -89,18 +91,25 @@ export class StartEnrichment implements INodeType {
 				enrich_fields: enrichFieldsDefault,
 			};
 		
-			// Conditionally add custom field if valid
-			if (shouldIncludeCustom) {
+			// Build the `custom` object with only non-empty stringified values
+			const custom: Record<string, string> = {};
+		
+			for (const key of customFieldKeys) {
+				const val = contact[key];
+				if (val !== undefined && val !== null && val !== '') {
+					custom[key] = String(val);
+				}
+			}
+		
+			if (Object.keys(custom).length > 0) {
 				return {
 					...baseContact,
-					custom: {
-						[customFields]: String(customFieldValueRaw),
-					},
+					custom,
 				};
 			} else {
 				return baseContact;
 			}
-		}) : [];
+		});
 
 		// Merge both
 		const allContacts = [...contactsFromForm, ...contactsFromInput];
