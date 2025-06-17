@@ -12,7 +12,7 @@ export const fullEnrichFields: INodeProperties[] = [
 				value: 'enrichment',
 			}
 		],
-		default: 'record',
+		default: 'enrichment',
 	},
 	{
 		displayName: 'Operation',
@@ -48,7 +48,7 @@ export const fullEnrichFields: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		description: 'The URL to receive the enrichment result.',
+		description: 'The webhook URL to receive results. Must be publicly accessible (e.g. n8n webhook trigger URL).',
 	},
 	{
 		displayName: 'Custom Fields',
@@ -58,7 +58,7 @@ export const fullEnrichFields: INodeProperties[] = [
 			multipleValues: true,
 		},
 		default: {},
-		placeholder: 'Add custom field',
+		placeholder: 'Add a custom field key from input data (e.g., row_number)',
 		options: [
 			{
 				displayName: 'Field',
@@ -85,8 +85,8 @@ export const fullEnrichFields: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		placeholder: 'Add Contact',
-		default: null,
+		placeholder: 'Add a contact (firstname, lastname, etc.)',
+		default: {},
 		options: [
 			{
 				displayName: 'Fields',

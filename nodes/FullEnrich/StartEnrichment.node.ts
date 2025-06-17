@@ -4,6 +4,7 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	NodeConnectionType,
+	NodeOperationError,
 } from 'n8n-workflow';
 
 import { fullEnrichFields } from './FullEnrich.properties';
@@ -37,20 +38,14 @@ export class StartEnrichment implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 
-		// Shared/default values from form
 		const enrichmentName = this.getNodeParameter('enrichmentName', 0) as string;
 		const webhookUrl = this.getNodeParameter('webhookUrl', 0) as string;
 		const enrichFieldsDefault = this.getNodeParameter('enrichFields', 0) as string[];
-
-		
 		const rawCustomFields = this.getNodeParameter('customFields', 0) as {
 			field: Array<{ key: string }>
 		};
-		
 		const customFieldKeys = rawCustomFields?.field?.map(f => f.key).filter(Boolean) ?? [];
 		
-
-		// Get contacts from the form
 		const formContacts = (
 			this.getNodeParameter('contact', 0, false) as {
 				fields: Array<{
@@ -62,8 +57,6 @@ export class StartEnrichment implements INodeType {
 				}>;
 			}
 		)?.fields ?? [];
-
-		// Transform form contacts
 		const contactsFromForm = formContacts.map((c) => ({
 			firstname: c.firstName,
 			lastname: c.lastName,
@@ -79,9 +72,14 @@ export class StartEnrichment implements INodeType {
 				lastname: string;
 				company?: string;
 				linkedin_url?: string;
-				[key: string]: any; // to access dynamic fields
+				[key: string]: any;
 			};
-		
+
+			const { firstname, lastname, company, company_name } = contact;
+
+			if (!firstname || !lastname || (!company && !company_name)) {
+				throw new NodeOperationError(this.getNode(), `Each contact must have firstname, lastname, and at least one of domain (company) or company_name.`);
+			}
 			const baseContact = {
 				firstname: contact.firstname,
 				lastname: contact.lastname,
@@ -91,16 +89,13 @@ export class StartEnrichment implements INodeType {
 				enrich_fields: enrichFieldsDefault,
 			};
 		
-			// Build the `custom` object with only non-empty stringified values
 			const custom: Record<string, string> = {};
-		
 			for (const key of customFieldKeys) {
 				const val = contact[key];
 				if (val !== undefined && val !== null && val !== '') {
 					custom[key] = String(val);
 				}
-			}
-		
+			}	
 			if (Object.keys(custom).length > 0) {
 				return {
 					...baseContact,
@@ -111,17 +106,15 @@ export class StartEnrichment implements INodeType {
 			}
 		});
 
-		// Merge both
 		const allContacts = [...contactsFromForm, ...contactsFromInput];
-				
-		// Build request body with all contacts
+		if (allContacts.length === 0) {
+			throw new NodeOperationError(this.getNode(), 'No contacts provided from form or input');
+		}
 		const requestBody = {
 			name: enrichmentName,
 			webhook_url: webhookUrl,
 			datas: allContacts,
 		};
-
-		// Send single batch request
 		await this.helpers.httpRequestWithAuthentication?.call(this, 'fullEnrichApi', {
 			method: 'POST',
 			url: 'http://localhost:6543/api/v1/contact/enrich/bulk',
@@ -129,7 +122,6 @@ export class StartEnrichment implements INodeType {
 			json: true,
 		});
 
-		// One return item for the batch
 		returnData.push({ json: { success: true, sent: allContacts.length, webhook_url: webhookUrl } });
 
 		return [returnData];
