@@ -33,7 +33,8 @@
 			"dist/credentials/FullEnrichApi.credentials.js"
 		],
 		"nodes": [
-			"dist/nodes/FullEnrich/FullEnrich.node.js"
+			"dist/nodes/FullEnrich/FullEnrich.node.js",
+			"dist/nodes/EnrichmentResultTrigger/EnrichmentResultTrigger.node.js"
 		]
 	},
 	"devDependencies": {

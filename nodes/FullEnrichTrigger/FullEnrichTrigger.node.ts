@@ -7,13 +7,13 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 
-export class EnrichmentResultTrigger implements INodeType {
+export class FullEnrichTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'FullEnrich Trigger',
 		name: 'fullEnrichTrigger',
 		icon: {
-			light: 'file:fe-logo-light.svg',
-			dark: 'file:fe-logo-dark.svg',
+			light: 'file:../fe-logo-light.svg',
+			dark: 'file:../fe-logo-dark.svg',
 		  },
 		group: ['trigger'],
 		version: 1,

@@ -7,15 +7,15 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 
-import { fullEnrichFields } from './FullEnrich.properties';
+import { fullEnrichFields } from './FullEnrich.description';
 
-export class StartEnrichment implements INodeType {
+export class FullEnrich implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'FullEnrich',
 		name: 'fullEnrich',
 		icon: {
-			light: 'file:fe-logo-light.svg',
-			dark: 'file:fe-logo-dark.svg',
+			light: 'file:../fe-logo-light.svg',
+			dark: 'file:../fe-logo-dark.svg',
 		  },
 		group: ['action'],
 		version: 1,
