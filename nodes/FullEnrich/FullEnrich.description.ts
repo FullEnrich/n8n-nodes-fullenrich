@@ -58,7 +58,7 @@ export const fullEnrichFields: INodeProperties[] = [
 			multipleValues: true,
 		},
 		default: {},
-		placeholder: 'Add a custom field key from input data (e.g., row_number)',
+		placeholder: 'Add a custom field',
 		options: [
 			{
 				displayName: 'Field',
@@ -85,7 +85,7 @@ export const fullEnrichFields: INodeProperties[] = [
 		typeOptions: {
 			multipleValues: true,
 		},
-		placeholder: 'Add a contact (firstname, lastname, etc.)',
+		placeholder: 'Add a contact',
 		default: {},
 		options: [
 			{

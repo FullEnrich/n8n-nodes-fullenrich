@@ -8,6 +8,7 @@ import {
 } from 'n8n-workflow';
 
 import { fullEnrichFields } from './FullEnrich.description';
+import { baseUrl } from '../shared/constant';
 
 export class FullEnrich implements INodeType {
 	description: INodeTypeDescription = {
@@ -117,7 +118,7 @@ export class FullEnrich implements INodeType {
 		};
 		await this.helpers.httpRequestWithAuthentication?.call(this, 'fullEnrichApi', {
 			method: 'POST',
-			url: 'http://localhost:6543/api/v1/contact/enrich/bulk',
+			url: `${baseUrl}/contact/enrich/bulk`,
 			body: requestBody,
 			json: true,
 		});
