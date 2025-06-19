@@ -55,56 +55,65 @@ export class FullEnrich implements INodeType {
 					domain: string;
 					companyName: string;
 					linkedinUrl: string;
+					customFields?: {
+						customField?: Array<{ key: string; value: string }>;
+					};
 				}>;
 			}
 		)?.fields ?? [];
-		const contactsFromForm = formContacts.map((c) => ({
-			firstname: c.firstName,
-			lastname: c.lastName,
-			domain: c.domain,
-			company_name: c.companyName,
-			linkedin_url: c.linkedinUrl,
-			enrich_fields: enrichFieldsDefault,
-		}));
 
-		const contactsFromInput = items.map(item => {
-			const contact = item.json as {
-				firstname: string;
-				lastname: string;
-				company?: string;
-				linkedin_url?: string;
-				[key: string]: any;
-			};
-
-			const { firstname, lastname, company, company_name } = contact;
-
-			if (!firstname || !lastname || (!company && !company_name)) {
-				throw new NodeOperationError(this.getNode(), `Each contact must have firstname, lastname, and at least one of domain (company) or company_name.`);
-			}
+		const contactsFromForm = formContacts.map((c) => {
 			const baseContact = {
-				firstname: contact.firstname,
-				lastname: contact.lastname,
-				domain: contact.company,
-				company_name: contact.company,
-				linkedin_url: contact.linkedin_url,
+				firstname: c.firstName,
+				lastname: c.lastName,
+				domain: c.domain,
+				company_name: c.companyName,
+				linkedin_url: c.linkedinUrl,
 				enrich_fields: enrichFieldsDefault,
 			};
 		
+			// Extract custom fields if any
+			const custom: Record<string, string> = {};
+			if (c.customFields?.customField?.length) {
+				for (const { key, value } of c.customFields.customField) {
+					if (key && value !== undefined) {
+						custom[key] = value;
+					}
+				}
+			}
+		
+			return Object.keys(custom).length > 0
+				? { ...baseContact, custom }
+				: baseContact;
+		});
+
+		const contactsFromInput = items
+		.map(item => item.json)
+		.filter(contact => {
+			const { firstname, lastname, company, company_name } = contact;
+			return firstname && lastname && (company || company_name);
+		})
+		.map(contact => {
+			const { firstname, lastname, company, company_name, linkedin_url } = contact;
+	
+			const baseContact = {
+				firstname,
+				lastname,
+				domain: company ?? company_name ?? '',
+				company_name: company_name ?? company ?? '',
+				linkedin_url: linkedin_url ?? '',
+				enrich_fields: enrichFieldsDefault,
+			};
+	
 			const custom: Record<string, string> = {};
 			for (const key of customFieldKeys) {
 				const val = contact[key];
 				if (val !== undefined && val !== null && val !== '') {
 					custom[key] = String(val);
 				}
-			}	
-			if (Object.keys(custom).length > 0) {
-				return {
-					...baseContact,
-					custom,
-				};
-			} else {
-				return baseContact;
 			}
+	
+			return Object.keys(custom).length > 0 ? { ...baseContact, custom } : baseContact;
 		});
 
 		const allContacts = [...contactsFromForm, ...contactsFromInput];

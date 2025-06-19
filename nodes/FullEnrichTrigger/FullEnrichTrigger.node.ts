@@ -54,29 +54,18 @@ export class FullEnrichTrigger implements INodeType {
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const body = this.getBodyData();
 	
-		if (!body || !body.status || !Array.isArray(body.datas)) {
+		if (!body || !body.status || !body.datas) {
 			throw new NodeOperationError(this.getNode(), 'Invalid webhook payload');
 		}
 	
-		// Transform datas
-		const flattened = body.datas.map(data => ({
-			// Flatten custom fields (with string cast)
-			...Object.entries(data.custom ?? {}).reduce((acc, [key, value]) => {
-			  acc[key] = String(value);
-			  return acc;
-			}, {} as Record<string, string>),
-			// Add contact info
-			firstname: data.contact?.firstname ?? '',
-			lastname: data.contact?.lastname ?? '',
-			most_probable_email: data.contact?.most_probable_email ?? '',
-			most_probable_phone: data.contact?.most_probable_phone
-			  ? `'${data.contact.most_probable_phone}`
-			  : '',
-		  }));
 	
 		return {
 			workflowData: [
-				flattened.map(entry => ({ json: entry })) // ONE branch, multiple items
+				[
+					{
+						json: body,
+					},
+				],
 			],
 		};
 	}

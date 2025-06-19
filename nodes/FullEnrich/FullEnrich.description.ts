@@ -127,6 +127,36 @@ export const fullEnrichFields: INodeProperties[] = [
 							required:	true,
 						default: '',
 					},
+					{
+						displayName: 'Custom Fields',
+						name: 'customFields',
+						type: 'fixedCollection',
+						typeOptions: {
+							multipleValues: true,
+						},
+						default: {},
+						placeholder: 'Add Custom Field',
+						options: [
+							{
+								displayName: 'Custom Field',
+								name: 'customField',
+								values: [
+									{
+										displayName: 'Key',
+										name: 'key',
+										type: 'string',
+										default: '',
+									},
+									{
+										displayName: 'Value',
+										name: 'value',
+										type: 'string',
+										default: '',
+									},
+								],
+							},
+						],
+					},
 				],
 			},
 		],
