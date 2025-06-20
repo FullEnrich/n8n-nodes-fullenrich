@@ -1,8 +1,10 @@
 # n8n-nodes-fullenrich
 
-This is an n8n community node. It lets you use FullEnrich in your n8n workflows.
+This is an n8n community node that lets you use FullEnrich in your n8n workflows.
 
-**FullEnrich** is a contact enrichment service that takes minimal input (like first name, last name, company domain or LinkedIn URL) and returns enriched information such as emails, phone numbers, and company data. This node enables you to start asynchronous enrichment jobs and receive enriched results via webhook, all inside n8n.
+**FullEnrich** is a contact enrichment service that takes minimal input (such as first name, last name, company domain, or LinkedIn URL) and returns enriched contact data like emails, phone numbers, and company information.  
+This node enables you to **start asynchronous enrichment requests** and **receive enriched results via webhook**, all within n8n.
+
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
@@ -32,17 +34,16 @@ Then restart your n8n instance.
 
 ## Operations
 
-This node provides the following:
+This package provides two nodes:
 
 ### FullEnrich Node: Start Enrichment
-- Accepts contacts as input (via previous node or form UI).
-- Sends a batch enrichment request to the FullEnrich API.
-- Supports enriching multiple contacts at once.
-- Optional custom field mapping for tracking (e.g. `row_number`, `user_id`).
-- Automatically handles webhook URL generation.
+- Accepts one or multiple contacts from previous nodes (e.g., Sheets, forms, or manual input).
+- Supports additional custom fields per contact (e.g. `row_id`, `user_id`).
+- Sends each contact to FullEnrich's API enrichment endpoint.
 
 ### FullEnrich Node: Get Enrichment Result (Webhook Trigger)
-- Listens for enrichment results returned via webhook from FullEnrich.
+- Acts as a webhook endpoint.
+- Listens for enrichment results returned via `webhook_url` from FullEnrich.
 - Outputs enriched contact data in a format usable by other nodes like Google Sheets, Airtable, or CRMs.
 
 ---
@@ -53,7 +54,7 @@ The node requires API authentication:
 
 - Go to **n8n > Credentials**.
 - Create a new **HTTP Basic Auth** credential or custom one labeled `fullEnrichApi`.
-- Provide your API key or username/password as required by your FullEnrich backend.
+- Provide your API key as required by your FullEnrich backend.
 
 _You must assign this credential in the "Start Enrichment" node configuration._
 
@@ -70,16 +71,15 @@ _You must assign this credential in the "Start Enrichment" node configuration._
 ## Usage
 
 - The **Start Enrichment** node supports contacts from:
-  - Previous nodes (e.g., Google Sheets, Airtable, Manual trigger).
-  - UI form (via structured fields).
-  - Or both (merged into one request).
+- Previous nodes (e.g., Google Sheets, Airtable, Manual trigger).
+- Manual input from UI form (via structured fields).
 - You can also pass a **custom field name** (e.g. `user_id`) to track each contact in your workflow — this value will be passed under the `custom` object.
 - The **Get Result** node acts as a webhook and must be connected to the URL you provide to FullEnrich (auto-generated in most cases).
 
 **Example Use Case:**
 1. Load leads from a Google Sheet.
-2. Send to **Start Enrichment** (with batching).
-3. Receive enriched data via **Get Result Trigger**.
+2. Send to **Start Enrichment**.
+3. Receive enriched data via **FullEnrich Trigger**.
 4. Update the same Google Sheet.
 
 ---
@@ -95,5 +95,3 @@ _You must assign this credential in the "Start Enrichment" node configuration._
 
 ### 0.1.0
 - Initial release.
-- Supports asynchronous bulk enrichment and webhook result handling.
-- Batch handling from input nodes and merging with UI form data.
