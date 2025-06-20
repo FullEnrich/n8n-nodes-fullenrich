@@ -21,13 +21,13 @@ export class FullEnrichTrigger implements INodeType {
 		defaults: {
 			name: 'FullEnrich Trigger',
 		},
-		inputs: [],
-		outputs: [NodeConnectionType.Main],
+		inputs: [], // This is a trigger node, so it has no input
+		outputs: [NodeConnectionType.Main], // It sends data to the main output
 		webhooks: [
 			{
 				name: 'default',
 				httpMethod: 'POST',
-				responseMode: 'onReceived',
+				responseMode: 'onReceived', // Respond immediately when webhook is received
 				path: 'enrich-callback',
 			},
 		],
@@ -54,19 +54,17 @@ export class FullEnrichTrigger implements INodeType {
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const body = this.getBodyData();
 	
-		if (!body || !body.status || !body.datas) {
+		// Validate the payload to make sure it contains a "datas" array
+		if (!body || !Array.isArray(body.datas)) {
 			throw new NodeOperationError(this.getNode(), 'Invalid webhook payload');
 		}
 	
-	
+		// Format each data item as n8n output
+		const results = body.datas.map((dataItem) => ({
+			json: dataItem,
+		}));
 		return {
-			workflowData: [
-				[
-					{
-						json: body,
-					},
-				],
-			],
+			workflowData: [results],
 		};
 	}
 }
