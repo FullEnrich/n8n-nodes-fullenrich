@@ -70,7 +70,7 @@ export class FullEnrich implements INodeType {
 			const custom: Record<string, string> = {};
 			if (rawCustomFields?.customField?.length) {
 				for (const { key, value } of rawCustomFields.customField) {
-					if (key && value !== undefined) {
+					if (key && value !== undefined && value !== null) {
 						custom[key] = String(value);
 					}
 				}
