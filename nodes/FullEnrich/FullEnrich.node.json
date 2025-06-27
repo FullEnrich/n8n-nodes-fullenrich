@@ -1,0 +1,21 @@
+{
+	"node": "n8n-nodes-base.StartEnrichment",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": [
+		"Contacts",
+		"Enrichment"
+	],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://docs.fullenrich.com/authentication"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://docs.fullenrich.com/startbulk"
+			}
+		]
+	}
+}
