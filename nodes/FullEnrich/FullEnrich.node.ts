@@ -3,6 +3,8 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	JsonObject,
+	NodeApiError,
 	NodeConnectionType,
 } from 'n8n-workflow';
 
@@ -14,6 +16,7 @@ import { baseUrl } from '../shared/constant';
 interface FullEnrichContact {
 	firstname: string;
 	lastname: string;
+	company_name: string;
 	domain: string;
 	linkedin_url: string;
 	enrich_fields: string[];
@@ -58,7 +61,8 @@ export class FullEnrich implements INodeType {
 		for (let i = 0; i < items.length; i++) {
 			const firstname = this.getNodeParameter('firstName', i) as string;
 			const lastname = this.getNodeParameter('lastName', i) as string;
-			const domain = this.getNodeParameter('domain', i) as string;
+			const companyName = this.getNodeParameter('companyName', i) as string;
+			const companyDomain = this.getNodeParameter('companyDomain', i) as string;
 			const linkedinUrl = this.getNodeParameter('linkedinUrl', i) as string;
 
 			// Retrieve custom fields (as an array of key-value pairs)
@@ -80,7 +84,8 @@ export class FullEnrich implements INodeType {
 			const contact: FullEnrichContact = {
 				firstname,
 				lastname,
-				domain,
+				company_name: companyName,
+				domain: companyDomain,
 				linkedin_url: linkedinUrl,
 				enrich_fields: enrichFieldsDefault,
 			};
@@ -98,17 +103,44 @@ export class FullEnrich implements INodeType {
 				datas: [contact],
 			};
 			try {
-				// Send the HTTP POST request using authentication
 				await this.helpers.httpRequestWithAuthentication?.call(this, 'fullEnrichApi', {
 					method: 'POST',
 					url: `${baseUrl}/contact/enrich/bulk`,
 					body: requestBody,
 					json: true,
 				});
+
 				returnData.push({ json: { success: true, sent: contact, webhook_url: webhookUrl } });
-			  } catch (error) {
-				returnData.push({ json: { success: false, error: error.message, contact } });
-			  }		}
+
+			}
+			catch (error) {
+				const err = error as NodeApiError;
+
+				const errorCode = (err as any)?.context?.data?.code;
+				const errorMessage = (err as any)?.context?.data?.message || err.message;
+
+				// Map of known error codes to custom messages
+				const knownErrors: Record<string, string> = {
+					'error.linkedin.malformated': 'Invalid LinkedIn URL provided',
+					'error.enrichment.webhook_url': 'Invalid or missing webhook URL',
+					'error.enrichment.custom.key.exceeded': 'Custom key character limit exceeded',
+					'error.enrichment.custom.value.exceeded': 'Custom value character limit exceeded',
+					'error.enrichment.firstname.empty': 'First name is required',
+					'error.enrichment.lastname.empty': 'Last name is required',
+					'error.enrichment.domain.empty': 'Company domain is required',
+					'error.enrichment.domain.invalid': 'Invalid company domain',
+					'error.enrichment.linkedin_url.invalid': 'Invalid LinkedIn URL provided',
+				};
+
+				const message = knownErrors[errorCode] || errorMessage || 'Unknown error occurred';
+				const description = `API error: ${errorCode || 'unknown'}`;
+
+				throw new NodeApiError(this.getNode(), error as JsonObject, {
+					message,
+					description,
+				});
+			}
+		}
 		return [returnData];
 	}
 }
