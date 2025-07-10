@@ -115,14 +115,14 @@ export class FullEnrich implements INodeType {
 				returnData.push({ json: { success: true, sent: contact, webhook_url: webhookUrl } });
 
 			} catch (error) {
-				const apiError = error as NodeApiError & { response?: any };
+				const apiError = error as NodeApiError;
 
 				// Try to extract error details from response
 				const response = (apiError as any)?.cause?.response;
-				const status = (apiError as any)?.httpCode;
+				const status = apiError.httpCode;
 				const responseData = response?.data;
 
-				const errorCode = responseData?.code || (apiError as any)?.context?.data?.code;
+				const errorCode = responseData?.code;
 				const errorMessage = responseData?.message || apiError.message;
 
 				// Map of known error codes to custom messages
@@ -143,12 +143,12 @@ export class FullEnrich implements INodeType {
 				let description = `API error: ${errorCode || 'unknown'} (HTTP ${status || 'n/a'})`;
 
 				// Add specific messages per status code
-				if (status === 400) {
+				if (status === '400') {
 					description = 'Bad Request — The input data might be invalid or incomplete.';
-				} else if (status === 401) {
+				} else if (status === '401') {
 					message = 'Unauthorized — Please check your API credentials.';
 					description = 'Authentication failed. Verify your API key or token.';
-				} else if (status === 500) {
+				} else if (status === '500') {
 					message = 'Server Error — The external service failed.';
 					description = 'The API encountered an internal error. Try again later.';
 				}
