@@ -9,30 +9,56 @@ import {
 } from 'n8n-workflow';
 
 import { fullEnrichFields } from './FullEnrich.description';
-import { baseUrl } from '../shared/constant';
+import { baseUrlV2 } from '../shared/constant';
+import { buildErrorResponse, parseCustomFields } from './FullEnrich.shared';
+import { executeV2 } from './FullEnrichV2.execute';
 
-// Define the structure of a contact to be sent to the FullEnrich API
-// based on the documentation: https://docs.fullenrich.com/startbulk
-interface FullEnrichContact {
-	firstname: string;
-	lastname: string;
-	company_name: string;
-	domain: string;
-	linkedin_url: string;
-	enrich_fields: string[];
-	custom?: Record<string, string>;
+// V2 error codes (V1 now calls V2 API internally)
+const knownErrors: Record<string, string> = {
+	'error.linkedin.malformated': 'Invalid LinkedIn URL provided',
+	'error.enrichment.webhook_url': 'Invalid or missing webhook URL',
+	'error.enrichment.custom.key.exceeded': 'Custom key character limit exceeded',
+	'error.enrichment.custom.value.exceeded': 'Custom value character limit exceeded',
+	'error.enrichment.first_name.empty': 'First name is required',
+	'error.enrichment.last_name.empty': 'Last name is required',
+	'error.enrichment.domain.empty': 'Company domain is required',
+	'error.enrichment.domain.invalid': 'Invalid company domain',
+	'error.enrichment.linkedin_url.invalid': 'Invalid LinkedIn URL provided',
+};
+
+// V1 enrich fields → V2 enrich fields
+const enrichFieldsV1toV2: Record<string, string> = {
+	'contact.emails': 'contact.work_emails',
+	'contact.phones': 'contact.phones',
+};
+
+function buildContactForV2(context: IExecuteFunctions, index: number, enrichFields: string[]) {
+	const contact: Record<string, unknown> = {
+		first_name: context.getNodeParameter('firstName', index) as string,
+		last_name: context.getNodeParameter('lastName', index) as string,
+		company_name: context.getNodeParameter('companyName', index) as string,
+		domain: context.getNodeParameter('companyDomain', index) as string,
+		linkedin_url: context.getNodeParameter('linkedinUrl', index) as string,
+		enrich_fields: enrichFields.map((f) => enrichFieldsV1toV2[f] || f),
+	};
+
+	const custom = parseCustomFields(context, index);
+	if (custom) contact.custom = custom;
+
+	return contact;
 }
 
 export class FullEnrich implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'FullEnrich',
+		displayName: 'FullEnrich (DEV)',
 		name: 'fullEnrich',
 		icon: {
 			light: 'file:../fe-logo-light.svg',
 			dark: 'file:../fe-logo-dark.svg',
 		},
 		group: ['transform'],
-		version: 1,
+		version: [1, 2],
+		defaultVersion: 1,
 		description: 'Start a FullEnrich bulk enrichment request',
 		defaults: {
 			name: 'FullEnrich',
@@ -49,110 +75,47 @@ export class FullEnrich implements INodeType {
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+		const nodeVersion = this.getNode().typeVersion;
 
+		if (nodeVersion >= 2) {
+			return executeV2(this);
+		}
+
+		// V1: calls V2 API internally, maps request fields
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 
-		// Retrieve shared parameters for all items
 		const enrichmentName = this.getNodeParameter('enrichmentName', 0) as string;
 		const webhookUrl = this.getNodeParameter('webhookUrl', 0) as string;
-		const enrichFieldsDefault = this.getNodeParameter('enrichFields', 0) as string[];
+		const enrichFields = this.getNodeParameter('enrichFields', 0) as string[];
 
-		// Process each item from input
 		for (let i = 0; i < items.length; i++) {
-			const firstname = this.getNodeParameter('firstName', i) as string;
-			const lastname = this.getNodeParameter('lastName', i) as string;
-			const companyName = this.getNodeParameter('companyName', i) as string;
-			const companyDomain = this.getNodeParameter('companyDomain', i) as string;
-			const linkedinUrl = this.getNodeParameter('linkedinUrl', i) as string;
+			const contact = buildContactForV2(this, i, enrichFields);
 
-			// Retrieve custom fields (as an array of key-value pairs)
-			const rawCustomFields = this.getNodeParameter('customFields', i) as {
-				customField?: Array<{ key: string; value: string }>;
-			};
-
-			// Convert custom fields array into a key-value object
-			const custom: Record<string, string> = {};
-			if (rawCustomFields?.customField?.length) {
-				for (const { key, value } of rawCustomFields.customField) {
-					if (key && value !== undefined && value !== null) {
-						custom[key] = String(value);
-					}
-				}
-			}
-
-			// Build the contact object
-			const contact: FullEnrichContact = {
-				firstname,
-				lastname,
-				company_name: companyName,
-				domain: companyDomain,
-				linkedin_url: linkedinUrl,
-				enrich_fields: enrichFieldsDefault,
-			};
-
-
-			// Add custom fields only if any exist
-			if (Object.keys(custom).length > 0) {
-				contact.custom = custom;
-			}
-
-			// Build the request body
 			const requestBody = {
 				name: enrichmentName,
 				webhook_url: webhookUrl,
-				datas: [contact],
+				data: [contact],
 			};
 
 			try {
-				await this.helpers.httpRequestWithAuthentication?.call(this, 'fullEnrichApi', {
+				const response = await this.helpers.httpRequestWithAuthentication.call(this, 'fullEnrichApi', {
 					method: 'POST',
-					url: `${baseUrl}/contact/enrich/bulk`,
+					url: `${baseUrlV2}/contact/enrich/bulk`,
 					body: requestBody,
 					json: true,
 				});
 
-				returnData.push({ json: { success: true, sent: contact, webhook_url: webhookUrl } });
-
+				returnData.push({
+					json: { success: true, enrichment_id: response.enrichment_id, sent: contact, webhook_url: webhookUrl },
+					pairedItem: { item: i },
+				});
 			} catch (error) {
-				const apiError = error as NodeApiError;
-
-				// Try to extract error details from response
-				const response = (apiError as any)?.cause?.response;
-				const status = apiError.httpCode;
-				const responseData = response?.data;
-
-				const errorCode = responseData?.code;
-				const errorMessage = responseData?.message || apiError.message;
-
-				// Map of known error codes to custom messages
-				const knownErrors: Record<string, string> = {
-					'error.linkedin.malformated': 'Invalid LinkedIn URL provided',
-					'error.enrichment.webhook_url': 'Invalid or missing webhook URL',
-					'error.enrichment.custom.key.exceeded': 'Custom key character limit exceeded',
-					'error.enrichment.custom.value.exceeded': 'Custom value character limit exceeded',
-					'error.enrichment.firstname.empty': 'First name is required',
-					'error.enrichment.lastname.empty': 'Last name is required',
-					'error.enrichment.domain.empty': 'Company domain is required',
-					'error.enrichment.domain.invalid': 'Invalid company domain',
-					'error.enrichment.linkedin_url.invalid': 'Invalid LinkedIn URL provided',
-				};
-
-				// Default to known error message or fallbacks
-				let message = knownErrors[errorCode] || errorMessage || 'Unknown error occurred';
-				let description = `API error: ${errorCode || 'unknown'} (HTTP ${status || 'n/a'})`;
-
-				// Add specific messages per status code
-				if (status === '400') {
-					description = 'Bad Request — The input data might be invalid or incomplete.';
-				} else if (status === '401') {
-					message = 'Unauthorized — Please check your API credentials.';
-					description = 'Authentication failed. Verify your API key or token.';
-				} else if (status === '500') {
-					message = 'Server Error — The external service failed.';
-					description = 'The API encountered an internal error. Try again later.';
+				if (this.continueOnFail()) {
+					returnData.push({ json: { success: false, error: (error as Error).message }, pairedItem: { item: i } });
+					continue;
 				}
-
+				const { message, description } = buildErrorResponse(error, knownErrors);
 				throw new NodeApiError(this.getNode(), error as JsonObject, {
 					message,
 					description,

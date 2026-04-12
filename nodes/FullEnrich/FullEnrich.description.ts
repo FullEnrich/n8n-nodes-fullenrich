@@ -2,7 +2,7 @@ import { INodeProperties } from 'n8n-workflow';
 
 export const fullEnrichFields: INodeProperties[] = [
 	{
-		displayName: 'Resource',
+		displayName: 'ResourceTest',
 		name: 'resource',
 		type: 'options',
 		noDataExpression: true,
@@ -48,6 +48,18 @@ export const fullEnrichFields: INodeProperties[] = [
 		type: 'string',
 		default: '',
 		description: 'The webhook URL to receive results. Must be publicly accessible (e.g. n8n webhook trigger URL).',
+	},
+	{
+		displayName: 'Per-Contact Webhook URL',
+		name: 'webhookContactFinishedUrl',
+		type: 'string',
+		default: '',
+		description: 'URL called when each individual contact finishes enrichment (webhook_events.contact_finished)',
+		displayOptions: {
+			show: {
+				'@version': [2],
+			},
+		},
 	},
 	{
 		displayName: 'Company Domain',
@@ -109,6 +121,7 @@ export const fullEnrichFields: INodeProperties[] = [
 			},
 		],
 	},
+	// V1 enrich fields (contact.emails, contact.phones)
 	{
 		displayName: 'Fields to Enrich',
 		name: 'enrichFields',
@@ -120,5 +133,28 @@ export const fullEnrichFields: INodeProperties[] = [
 			{ name: 'Contact Emails', value: 'contact.emails' },
 			{ name: 'Contact Phones', value: 'contact.phones' },
 		],
+		displayOptions: {
+			show: {
+				'@version': [1],
+			},
+		},
+	},
+	{
+		displayName: 'Fields to Enrich',
+		name: 'enrichFields',
+		type: 'multiOptions',
+		required: true,
+		default: ['contact.work_emails', 'contact.phones', 'contact.personal_emails'],
+		description: 'Which fields should be enriched',
+		options: [
+			{ name: 'Work Emails', value: 'contact.work_emails' },
+			{ name: 'Personal Emails', value: 'contact.personal_emails' },
+			{ name: 'Contact Phones', value: 'contact.phones' },
+		],
+		displayOptions: {
+			show: {
+				'@version': [2],
+			},
+		},
 	},
 ];
