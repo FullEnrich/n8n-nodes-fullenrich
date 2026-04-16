@@ -53,12 +53,17 @@ export class FullEnrichTrigger implements INodeType {
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const body = this.getBodyData();
-	
+
+		// Check for failed enrichment statuses
+		if (body.status === 'CREDITS_INSUFFICIENT') {
+			throw new NodeOperationError(this.getNode(), 'Enrichment failed: not enough credits. Please top up your FullEnrich account.');
+		}
+
 		// Validate the payload to make sure it contains a "datas" array
 		if (!body || !Array.isArray(body.datas)) {
 			throw new NodeOperationError(this.getNode(), 'Invalid webhook payload');
 		}
-	
+
 		// Format each data item as n8n output
 		const results = body.datas.map((dataItem) => ({
 			json: dataItem,
