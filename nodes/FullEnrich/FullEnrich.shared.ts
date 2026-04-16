@@ -1,5 +1,27 @@
 import { IExecuteFunctions, NodeApiError } from 'n8n-workflow';
 
+export const knownErrors: Record<string, string> = {
+	'error.linkedin.malformated': 'Invalid LinkedIn URL provided',
+	'error.enrichment.webhook_url': 'Invalid or missing webhook URL',
+	'error.enrichment.custom.key.exceeded': 'Custom key character limit exceeded',
+	'error.enrichment.custom.value.exceeded': 'Custom value character limit exceeded',
+	'error.enrichment.first_name.empty': 'First name is required',
+	'error.enrichment.last_name.empty': 'Last name is required',
+	'error.enrichment.domain.empty': 'Company domain is required',
+	'error.enrichment.domain.invalid': 'Invalid company domain',
+	'error.enrichment.linkedin_url.invalid': 'Invalid LinkedIn URL provided',
+};
+
+// V1 enrich fields → V2 enrich fields
+const enrichFieldsV1toV2: Record<string, string> = {
+	'contact.emails': 'contact.work_emails',
+	'contact.phones': 'contact.phones',
+};
+
+export function mapEnrichFields(fields: string[]): string[] {
+	return fields.map((f) => enrichFieldsV1toV2[f] || f);
+}
+
 export const statusMessages: Record<string, { message?: string; description: string }> = {
 	'400': { description: 'Bad Request - The input data might be invalid or incomplete.' },
 	'401': {

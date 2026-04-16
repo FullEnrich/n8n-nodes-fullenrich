@@ -84,7 +84,7 @@ export function mapV2ToV1(row: Record<string, any>): Record<string, any> {
 
 export class FullEnrichTrigger implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'FullEnrich (LOCAL) Trigger',
+		displayName: 'FullEnrich Trigger',
 		name: 'fullEnrichTrigger',
 		icon: {
 			light: 'file:../fe-logo-light.svg',
