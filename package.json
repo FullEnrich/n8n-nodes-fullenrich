@@ -27,7 +27,6 @@
 		"lint": "eslint nodes credentials package.json",
 		"lintfix": "eslint nodes credentials package.json --fix",
 		"test": "jest",
-		"test:integration": "jest --testPathIgnorePatterns='/node_modules/|/dist/' --testPathPatterns=integration",
 		"prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
 	},
 	"files": [

@@ -49,18 +49,6 @@ export const fullEnrichFields: INodeProperties[] = [
 		displayOptions: { show: { '@version': [2] } },
 	},
 	{
-		displayName: 'First Name',
-		name: 'firstName',
-		type: 'string',
-		default: '',
-	},
-	{
-		displayName: 'Last Name',
-		name: 'lastName',
-		type: 'string',
-		default: '',
-	},
-	{
 		displayName: 'Company Domain',
 		name: 'companyDomain',
 		type: 'string',
@@ -69,6 +57,18 @@ export const fullEnrichFields: INodeProperties[] = [
 	{
 		displayName: 'Company Name',
 		name: 'companyName',
+		type: 'string',
+		default: '',
+	},
+	{
+		displayName: 'First Name',
+		name: 'firstName',
+		type: 'string',
+		default: '',
+	},
+	{
+		displayName: 'Last Name',
+		name: 'lastName',
 		type: 'string',
 		default: '',
 	},

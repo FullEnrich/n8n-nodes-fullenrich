@@ -16,33 +16,33 @@ export function mapV2ToV1(row: Record<string, any>): Record<string, any> {
 
 	return {
 		contact: {
-			firstname: row.input?.first_name,
-			lastname: row.input?.last_name,
-			domain: row.input?.company_domain,
-			most_probable_email: row.contact_info?.most_probable_work_email?.email,
-			most_probable_email_status: row.contact_info?.most_probable_work_email?.status,
+			firstname: row.input?.first_name ?? '',
+			lastname: row.input?.last_name ?? '',
+			domain: row.input?.company_domain ?? '',
+			most_probable_email: row.contact_info?.most_probable_work_email?.email ?? '',
+			most_probable_email_status: row.contact_info?.most_probable_work_email?.status ?? '',
 			most_probable_personal_email: row.contact_info?.most_probable_personal_email?.email ?? '',
 			most_probable_personal_email_status: row.contact_info?.most_probable_personal_email?.status ?? '',
-			most_probable_phone: row.contact_info?.most_probable_phone?.number,
-			emails: row.contact_info?.work_emails,
-			personal_emails: row.contact_info?.personal_emails,
-			phones: row.contact_info?.phones,
+			most_probable_phone: row.contact_info?.most_probable_phone?.number ?? '',
+			emails: row.contact_info?.work_emails ?? [],
+			personal_emails: row.contact_info?.personal_emails ?? [],
+			phones: row.contact_info?.phones ?? [],
 			social_medias: network
 				? [{ url: network.url, type: 'LINKEDIN' }]
 				: [],
 			profile: {
-				linkedin_id: network?.id,
-				linkedin_url: network?.url,
-				linkedin_handle: network?.handle,
-				firstname: row.profile?.first_name,
-				lastname: row.profile?.last_name,
-				sales_navigator_id: null,
-				premium_account: null,
-				summary: null,
-				headline: null,
+				linkedin_id: network?.id ?? 0,
+				linkedin_url: network?.url ?? '',
+				linkedin_handle: network?.handle ?? '',
+				firstname: row.profile?.first_name ?? '',
+				lastname: row.profile?.last_name ?? '',
+				sales_navigator_id: '',
+				premium_account: false,
+				summary: '',
+				headline: '',
 				location: row.profile?.location
 					? [row.profile.location.city, row.profile.location.region, row.profile.location.country].filter(Boolean).join(', ')
-					: null,
+					: '',
 				position: {
 					title: employment?.title,
 					description: employment?.description,
@@ -91,7 +91,8 @@ export class FullEnrichTrigger implements INodeType {
 			dark: 'file:../fe-logo-dark.svg',
 		},
 		group: ['trigger'],
-		version: 1,
+		version: [1, 2],
+		defaultVersion: 2,
 		description: 'Receives the enrichment result from FullEnrich',
 		defaults: {
 			name: 'FullEnrich Trigger',
@@ -128,21 +129,27 @@ export class FullEnrichTrigger implements INodeType {
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const body = this.getBodyData();
+		const triggerVersion = this.getNode().typeVersion;
 
 		// Accept both V2 (body.data) and V1 (body.datas) webhook payloads
-		const isV2 = Array.isArray(body.data);
-		const isV1 = Array.isArray(body.datas);
+		const isV2Payload = Array.isArray(body.data);
+		const isV1Payload = Array.isArray(body.datas);
 
-		if (!isV2 && !isV1) {
+		if (!isV2Payload && !isV1Payload) {
 			throw new NodeOperationError(this.getNode(), 'Invalid webhook payload: expected "data" or "datas" array');
 		}
 
-		const items = isV2 ? body.data : body.datas;
+		const items = isV2Payload ? body.data : body.datas;
 
-		// V2 payloads are mapped back to V1 structure for backward compatibility
-		const results = (items as Record<string, any>[]).map((dataItem) => ({
-			json: isV2 ? mapV2ToV1(dataItem) : dataItem,
-		}));
+		const results = (items as Record<string, any>[]).map((dataItem) => {
+			// V1 trigger: map V2 responses back to V1 structure for backward compatibility
+			// V2 trigger: pass through raw data as-is
+			if (triggerVersion === 1 && isV2Payload) {
+				return { json: mapV2ToV1(dataItem) };
+			}
+			return { json: dataItem };
+		});
+
 		return {
 			workflowData: [results],
 		};

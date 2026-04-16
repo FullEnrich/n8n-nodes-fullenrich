@@ -123,11 +123,11 @@ describe('mapV2ToV1', () => {
 		]);
 	});
 
-	it('sets 5 deprecated fields to null', () => {
-		expect(result.contact.profile.sales_navigator_id).toBeNull();
-		expect(result.contact.profile.premium_account).toBeNull();
-		expect(result.contact.profile.summary).toBeNull();
-		expect(result.contact.profile.headline).toBeNull();
+	it('sets 5 deprecated fields to empty defaults', () => {
+		expect(result.contact.profile.sales_navigator_id).toBe('');
+		expect(result.contact.profile.premium_account).toBe(false);
+		expect(result.contact.profile.summary).toBe('');
+		expect(result.contact.profile.headline).toBe('');
 		expect(result.contact.profile.position.company.website).toBeNull();
 	});
 
@@ -172,8 +172,9 @@ describe('mapV2ToV1 — minimal payload (no profile)', () => {
 	});
 
 	it('handles missing profile gracefully', () => {
-		expect(result.contact.profile.linkedin_id).toBeUndefined();
-		expect(result.contact.profile.location).toBeNull();
+		expect(result.contact.profile.linkedin_id).toBe(0);
+		expect(result.contact.profile.linkedin_url).toBe('');
+		expect(result.contact.profile.location).toBe('');
 		expect(result.contact.profile.position.title).toBeUndefined();
 		expect(result.contact.profile.position.company.linkedin_id).toBeUndefined();
 	});
