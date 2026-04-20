@@ -73,7 +73,7 @@ export const fullEnrichFields: INodeProperties[] = [
 		default: '',
 	},
 	{
-		displayName: 'LinkedIn URL',
+		displayName: 'Professional Network URL',
 		name: 'linkedinUrl',
 		type: 'string',
 		default: '',

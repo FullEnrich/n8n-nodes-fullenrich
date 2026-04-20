@@ -2,7 +2,7 @@
 
 This is an n8n community node that lets you use FullEnrich in your n8n workflows.
 
-**FullEnrich** is a contact enrichment service that takes minimal input (such as first name, last name, company domain, or LinkedIn URL) and returns enriched contact data like emails, phone numbers, and company information.  
+**FullEnrich** is a contact enrichment service that takes minimal input (such as first name, last name, company domain, or Professional Network URL) and returns enriched contact data like emails, phone numbers, and company information.  
 This node enables you to **start asynchronous enrichment requests** and **receive enriched results via webhook**, all within n8n.
 
 

@@ -5,8 +5,9 @@ import {
 	NodeApiError,
 } from 'n8n-workflow';
 
-import { baseUrlV2 } from '../shared/constant';
+import { baseUrl } from '../shared/constant';
 import { knownErrors, buildErrorResponse, parseCustomFields, mapEnrichFields } from './FullEnrich.shared';
+import { version as pkgVersion } from '../../package.json';
 
 function buildContact(context: IExecuteFunctions, index: number, enrichFields: string[], version: number) {
 	// V1 enrich fields need to be mapped to V2 equivalents (contact.emails → contact.work_emails)
@@ -32,11 +33,29 @@ function buildContact(context: IExecuteFunctions, index: number, enrichFields: s
 	return contact;
 }
 
+// V1 workflows echoed `firstname`/`lastname` (no underscore) and the raw (unmapped) enrich_fields.
+// Keep that shape so downstream steps referencing {{ $json.sent.firstname }} keep working.
+function buildV1Echo(contact: Record<string, unknown>, originalEnrichFields: string[]) {
+	const echo: Record<string, unknown> = {
+		firstname: contact.first_name,
+		lastname: contact.last_name,
+		company_name: contact.company_name,
+		domain: contact.domain,
+		linkedin_url: contact.linkedin_url,
+		enrich_fields: originalEnrichFields,
+	};
+	if (contact.custom) {
+		echo.custom = contact.custom;
+	}
+	return echo;
+}
+
 export async function execute(context: IExecuteFunctions, version: number): Promise<INodeExecutionData[][]> {
 	const items = context.getInputData();
 	const returnData: INodeExecutionData[] = [];
 
-	const enrichmentName = context.getNodeParameter('enrichmentName', 0) as string;
+	const rawEnrichmentName = context.getNodeParameter('enrichmentName', 0) as string;
+	const enrichmentName = rawEnrichmentName?.trim() || 'Enrichment by n8n';
 	const webhookUrl = context.getNodeParameter('webhookUrl', 0) as string;
 	const enrichFields = context.getNodeParameter('enrichFields', 0) as string[];
 
@@ -64,13 +83,20 @@ export async function execute(context: IExecuteFunctions, version: number): Prom
 		try {
 			const response = await context.helpers.httpRequestWithAuthentication.call(context, 'fullEnrichApi', {
 				method: 'POST',
-				url: `${baseUrlV2}/contact/enrich/bulk`,
+				url: `${baseUrl}/contact/enrich/bulk`,
 				body: requestBody,
 				json: true,
+				headers: {
+					'User-Agent': `n8n-nodes-fullenrich/${pkgVersion}`,
+					'X-Client-Source': 'n8n',
+					'X-Client-Node-Version': String(version),
+					'X-Client-Package-Version': pkgVersion,
+				},
 			});
 
+			const sentEcho = version === 1 ? buildV1Echo(contact, enrichFields) : contact;
 			returnData.push({
-				json: { success: true, enrichment_id: response.enrichment_id, sent: contact, webhook_url: webhookUrl },
+				json: { success: true, enrichment_id: response.enrichment_id, sent: sentEcho, webhook_url: webhookUrl },
 				pairedItem: { item: i },
 			});
 		} catch (error) {

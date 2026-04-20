@@ -4,7 +4,7 @@ import {
 	INodeProperties,
 	ICredentialTestRequest,
 } from 'n8n-workflow';
-import { baseUrlV2 } from '../nodes/shared/constant';
+import { baseUrl } from '../nodes/shared/constant';
 
 export class FullEnrichApi implements ICredentialType {
 	name = 'fullEnrichApi';
@@ -29,7 +29,7 @@ export class FullEnrichApi implements ICredentialType {
 	};
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: baseUrlV2,
+			baseURL: baseUrl,
 			url: '/account/keys/verify',
 			headers: {
 				Authorization: '=Bearer {{$credentials.apiKey}}',

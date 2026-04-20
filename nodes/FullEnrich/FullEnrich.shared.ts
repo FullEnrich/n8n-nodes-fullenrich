@@ -1,7 +1,9 @@
-import { IExecuteFunctions, NodeApiError } from 'n8n-workflow';
+import { IExecuteFunctions, NodeApiError, NodeOperationError } from 'n8n-workflow';
+
+export const MAX_CUSTOM_FIELDS = 10;
 
 export const knownErrors: Record<string, string> = {
-	'error.linkedin.malformated': 'Invalid LinkedIn URL provided',
+	'error.linkedin.malformated': 'Invalid professional network URL provided',
 	'error.enrichment.webhook_url': 'Invalid or missing webhook URL',
 	'error.enrichment.custom.key.exceeded': 'Custom key character limit exceeded',
 	'error.enrichment.custom.value.exceeded': 'Custom value character limit exceeded',
@@ -9,7 +11,7 @@ export const knownErrors: Record<string, string> = {
 	'error.enrichment.last_name.empty': 'Last name is required',
 	'error.enrichment.domain.empty': 'Company domain is required',
 	'error.enrichment.domain.invalid': 'Invalid company domain',
-	'error.enrichment.linkedin_url.invalid': 'Invalid LinkedIn URL provided',
+	'error.enrichment.linkedin_url.invalid': 'Invalid professional network URL provided',
 };
 
 // V1 enrich fields → V2 enrich fields
@@ -66,5 +68,13 @@ export function parseCustomFields(context: IExecuteFunctions, index: number): Re
 			custom[key] = String(value);
 		}
 	}
-	return Object.keys(custom).length > 0 ? custom : undefined;
+	const count = Object.keys(custom).length;
+	if (count > MAX_CUSTOM_FIELDS) {
+		throw new NodeOperationError(
+			context.getNode(),
+			`Custom data is limited to ${MAX_CUSTOM_FIELDS} keys (you provided ${count}). Please reduce the number of custom fields.`,
+			{ itemIndex: index },
+		);
+	}
+	return count > 0 ? custom : undefined;
 }

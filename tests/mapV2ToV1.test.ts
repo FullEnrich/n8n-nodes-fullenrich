@@ -123,19 +123,19 @@ describe('mapV2ToV1', () => {
 		]);
 	});
 
-	it('sets 5 deprecated fields to empty defaults', () => {
+	it('sets deprecated fields to empty defaults', () => {
 		expect(result.contact.profile.sales_navigator_id).toBe('');
 		expect(result.contact.profile.premium_account).toBe(false);
 		expect(result.contact.profile.summary).toBe('');
 		expect(result.contact.profile.headline).toBe('');
-		expect(result.contact.profile.position.company.website).toBeNull();
+		expect(result.contact.profile.position.company.website).toBe('');
 	});
 
 	it('maps location as joined string', () => {
 		expect(result.contact.profile.location).toBe('New York, New York, United States');
 	});
 
-	it('maps position from employment.all[0]', () => {
+	it('maps position from employment', () => {
 		expect(result.contact.profile.position.title).toBe('VP of Sales');
 		expect(result.contact.profile.position.description).toBe('Leading sales org');
 		expect(result.contact.profile.position.start_at).toEqual({ month: 6, year: 2022 });
@@ -144,6 +144,112 @@ describe('mapV2ToV1', () => {
 
 	it('passes through custom fields', () => {
 		expect(result.custom).toEqual({ crm_id: '99887' });
+	});
+});
+
+describe('mapV2ToV1 — employment.current preferred over all[0]', () => {
+	it('uses current when current.title is set', () => {
+		const row = {
+			profile: {
+				employment: {
+					current: { title: 'CEO', company: { name: 'CurrentCo', domain: 'current.com' } },
+					all: [{ title: 'Intern', company: { name: 'OldCo', domain: 'old.com' } }],
+				},
+			},
+		};
+		const r = mapV2ToV1(row);
+		expect(r.contact.profile.position.title).toBe('CEO');
+		expect(r.contact.profile.position.company.name).toBe('CurrentCo');
+	});
+
+	it('falls back to all[0] when current has no title', () => {
+		const row = {
+			profile: {
+				employment: {
+					current: { is_current: true },
+					all: [{ title: 'Intern', company: { name: 'OldCo', domain: 'old.com' } }],
+				},
+			},
+		};
+		const r = mapV2ToV1(row);
+		expect(r.contact.profile.position.title).toBe('Intern');
+		expect(r.contact.profile.position.company.name).toBe('OldCo');
+	});
+
+	it('fills missing fields on current from all[0]', () => {
+		const row = {
+			profile: {
+				employment: {
+					current: { title: 'CEO' }, // sparse: only title, no start_at/company
+					all: [{
+						title: 'CEO',
+						start_at: '2024-01-15T00:00:00Z',
+						end_at: '2025-06-01T00:00:00Z',
+						description: 'Running the company',
+						company: { name: 'MatchingCo', domain: 'matching.com' },
+					}],
+				},
+			},
+		};
+		const r = mapV2ToV1(row);
+		expect(r.contact.profile.position.title).toBe('CEO');
+		expect(r.contact.profile.position.start_at).toEqual({ month: 1, year: 2024 });
+		expect(r.contact.profile.position.end_at).toEqual({ month: 6, year: 2025 });
+		expect(r.contact.profile.position.description).toBe('Running the company');
+		expect(r.contact.profile.position.company.name).toBe('MatchingCo');
+	});
+});
+
+describe('mapV2ToV1 — domain fallback', () => {
+	it('prefers input.company_domain', () => {
+		const row = {
+			input: { company_domain: 'from-input.com' },
+			profile: { employment: { all: [{ title: 'X', company: { domain: 'from-employment.com' } }] } },
+		};
+		expect(mapV2ToV1(row).contact.domain).toBe('from-input.com');
+	});
+
+	it('falls back to employment.company.domain when input domain is empty', () => {
+		const row = {
+			input: { company_domain: '' },
+			profile: { employment: { all: [{ title: 'X', company: { domain: 'from-employment.com' } }] } },
+		};
+		expect(mapV2ToV1(row).contact.domain).toBe('from-employment.com');
+	});
+
+	it('returns empty string when both are missing', () => {
+		const row = { input: {}, profile: { employment: { all: [{}] } } };
+		expect(mapV2ToV1(row).contact.domain).toBe('');
+	});
+});
+
+describe('mapV2ToV1 — toMonthYear robustness', () => {
+	it('returns null for invalid date', () => {
+		const row = { profile: { employment: { all: [{ title: 'X', start_at: 'not-a-date' }] } } };
+		expect(mapV2ToV1(row).contact.profile.position.start_at).toBeNull();
+	});
+
+	it('returns null for empty/missing date', () => {
+		const row = { profile: { employment: { all: [{ title: 'X' }] } } };
+		expect(mapV2ToV1(row).contact.profile.position.start_at).toBeNull();
+		expect(mapV2ToV1(row).contact.profile.position.end_at).toBeNull();
+	});
+
+	it('parses valid ISO date into month/year', () => {
+		const row = { profile: { employment: { all: [{ title: 'X', start_at: '2023-03-15T00:00:00Z', end_at: '2024-09-01T00:00:00Z' }] } } };
+		const r = mapV2ToV1(row);
+		expect(r.contact.profile.position.start_at).toEqual({ month: 3, year: 2023 });
+		expect(r.contact.profile.position.end_at).toEqual({ month: 9, year: 2024 });
+	});
+
+	it('tolerates malformed ISO dates like "2024-1-0T00:00:00.000Z"', () => {
+		const row = { profile: { employment: { all: [{ title: 'X', start_at: '2024-1-0T00:00:00.000Z' }] } } };
+		expect(mapV2ToV1(row).contact.profile.position.start_at).toEqual({ month: 1, year: 2024 });
+	});
+
+	it('parses single-digit month in non-ISO format', () => {
+		const row = { profile: { employment: { all: [{ title: 'X', start_at: '2023-7-15' }] } } };
+		expect(mapV2ToV1(row).contact.profile.position.start_at).toEqual({ month: 7, year: 2023 });
 	});
 });
 
@@ -171,12 +277,8 @@ describe('mapV2ToV1 — minimal payload (no profile)', () => {
 		expect(result.contact.social_medias).toEqual([]);
 	});
 
-	it('handles missing profile gracefully', () => {
-		expect(result.contact.profile.linkedin_id).toBe(0);
-		expect(result.contact.profile.linkedin_url).toBe('');
-		expect(result.contact.profile.location).toBe('');
-		expect(result.contact.profile.position.title).toBeUndefined();
-		expect(result.contact.profile.position.company.linkedin_id).toBeUndefined();
+	it('returns undefined profile when row.profile is missing', () => {
+		expect(result.contact.profile).toBeUndefined();
 	});
 
 	it('defaults personal email to empty string when missing', () => {

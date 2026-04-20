@@ -1,1 +1,1 @@
-export const baseUrlV2 = 'https://app.fullenrich.com/api/v2'
+export const baseUrl = 'https://app.fullenrich.com/api/v2'
