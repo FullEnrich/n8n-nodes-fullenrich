@@ -3,7 +3,6 @@ import { mapV2ToV1 } from '../nodes/FullEnrichTrigger/FullEnrichTrigger.node';
 const v2Row = {
 	input: {
 		professional_network_url: 'https://www.linkedin.com/in/jdoe',
-		linkedin_url: 'https://www.linkedin.com/in/jdoe',
 		first_name: 'John',
 		last_name: 'Doe',
 		full_name: 'John Doe',

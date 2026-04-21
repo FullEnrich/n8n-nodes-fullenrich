@@ -21,7 +21,7 @@ function buildContact(context: IExecuteFunctions, index: number, enrichFields: s
 		last_name: context.getNodeParameter('lastName', index) as string,
 		company_name: context.getNodeParameter('companyName', index) as string,
 		domain: context.getNodeParameter('companyDomain', index) as string,
-		linkedin_url: context.getNodeParameter('linkedinUrl', index) as string,
+		professional_network_url: context.getNodeParameter('linkedinUrl', index) as string,
 		enrich_fields: mappedEnrichFields,
 	};
 
@@ -41,7 +41,7 @@ function buildV1Echo(contact: Record<string, unknown>, originalEnrichFields: str
 		lastname: contact.last_name,
 		company_name: contact.company_name,
 		domain: contact.domain,
-		linkedin_url: contact.linkedin_url,
+		linkedin_url: contact.professional_network_url,
 		enrich_fields: originalEnrichFields,
 	};
 	if (contact.custom) {
