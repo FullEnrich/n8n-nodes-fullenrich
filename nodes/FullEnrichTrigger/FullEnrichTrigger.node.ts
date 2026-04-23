@@ -82,7 +82,7 @@ export function mapV2ToV1(row: Record<string, any>): Record<string, any> {
 						linkedin_handle: companyNetwork?.handle,
 						name: employment?.company?.name,
 						description: employment?.company?.description,
-						website: '',
+						website: employment?.company?.domain ?? '',
 						domain: employment?.company?.domain,
 						industry: employment?.company?.industry?.main_industry,
 						type: employment?.company?.company_type,
