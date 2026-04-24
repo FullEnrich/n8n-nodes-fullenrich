@@ -128,7 +128,11 @@ describe('mapV2ToV1', () => {
 		expect(result.contact.profile.premium_account).toBe(false);
 		expect(result.contact.profile.summary).toBe('');
 		expect(result.contact.profile.headline).toBe('');
-		expect(result.contact.profile.position.company.website).toBe('');
+	});
+
+	it('falls back company.website to company.domain', () => {
+		expect(result.contact.profile.position.company.website).toBe('acme.com');
+		expect(result.contact.profile.position.company.domain).toBe('acme.com');
 	});
 
 	it('maps location as joined string', () => {
