@@ -35,6 +35,37 @@ function pickEmployment(profile: Record<string, any> | undefined): Record<string
 	};
 }
 
+function hasV2Enrichment(ci: Record<string, any>): boolean {
+	return !!(
+		ci.most_probable_work_email?.email ||
+		ci.most_probable_personal_email?.email ||
+		ci.most_probable_phone?.number ||
+		ci.work_emails?.length ||
+		ci.personal_emails?.length ||
+		ci.phones?.length
+	);
+}
+
+function hasV1Enrichment(c: Record<string, any>): boolean {
+	return !!(
+		c.most_probable_email ||
+		c.most_probable_personal_email ||
+		c.most_probable_phone ||
+		c.emails?.length ||
+		c.personal_emails?.length ||
+		c.phones?.length
+	);
+}
+
+// True if the contact has at least one enriched email or phone.
+// CREDITS_INSUFFICIENT can return contacts with empty fields when credits ran out:
+// distinguishes "nothing was enriched (throw)" from "partial result (let through)".
+export function hasEnrichmentResult(item: Record<string, any>): boolean {
+	if (item?.contact_info) return hasV2Enrichment(item.contact_info);
+	if (item?.contact) return hasV1Enrichment(item.contact);
+	return false;
+}
+
 // Map a single V2 data item back to V1 flat structure
 export function mapV2ToV1(row: Record<string, any>): Record<string, any> {
 	const employment = pickEmployment(row.profile);
@@ -153,6 +184,27 @@ export class FullEnrichTrigger implements INodeType {
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const body = this.getBodyData();
+
+		// out_of_credits: throw only when no contact was actually enriched.
+		// The API may return contacts with empty fields when credits ran out — those
+		// items are useless. But if at least one contact was enriched, credits were
+		// already consumed: let the data through (flagged via enrichment.status)
+		// rather than forcing the client to retry and re-pay.
+		if (body.status === 'CREDITS_INSUFFICIENT') {
+			let items: Record<string, any>[] = [];
+			if (Array.isArray(body.data)) items = body.data as Record<string, any>[];
+			else if (Array.isArray(body.datas)) items = body.datas as Record<string, any>[];
+
+			if (!items.some(hasEnrichmentResult)) {
+				const enrichmentId = typeof body.id === 'string' || typeof body.id === 'number' ? String(body.id) : '';
+				const idSuffix = enrichmentId ? ` ${enrichmentId}` : '';
+				throw new NodeOperationError(
+					this.getNode(),
+					`out_of_credits: not enough credits to run enrichment${idSuffix}. Please top up your FullEnrich account.`,
+				);
+			}
+		}
+
 		const triggerVersion = this.getNode().typeVersion;
 
 		// Accept both V2 (body.data) and V1 (body.datas) webhook payloads
