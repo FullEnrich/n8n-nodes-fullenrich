@@ -153,6 +153,7 @@ export class FullEnrichTrigger implements INodeType {
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const body = this.getBodyData();
+
 		const triggerVersion = this.getNode().typeVersion;
 
 		// Accept both V2 (body.data) and V1 (body.datas) webhook payloads
@@ -164,17 +165,19 @@ export class FullEnrichTrigger implements INodeType {
 		}
 
 		const items = isV2Payload ? body.data : body.datas;
-		const enrichment = {
-			id: body.id,
-			name: body.name,
-			status: body.status,
-		};
 
 		const results = (items as Record<string, any>[]).map((dataItem) => {
 			// V1 trigger: map V2 responses back to V1 structure for backward compatibility
 			// V2 trigger: pass through raw data as-is
 			const mapped = triggerVersion === 1 && isV2Payload ? mapV2ToV1(dataItem) : dataItem;
-			return { json: { ...mapped, enrichment } };
+			return {
+				json: {
+					id: body.id,
+					name: body.name,
+					status: body.status,
+					...mapped,
+				},
+			};
 		});
 
 		return {
