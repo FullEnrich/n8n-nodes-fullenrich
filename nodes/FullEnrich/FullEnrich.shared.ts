@@ -36,13 +36,17 @@ export const statusMessages: Record<string, { message?: string; description: str
 	},
 };
 
+interface ApiErrorCause {
+	response?: { data?: { code?: string; message?: string } };
+}
+
 export function buildErrorResponse(error: unknown, knownErrors: Record<string, string>): { message: string; description: string } {
 	const apiError = error as NodeApiError;
-	const response = (apiError as any)?.cause?.response;
+	const response = (apiError.cause as ApiErrorCause | undefined)?.response;
 	const status = apiError.httpCode;
 	const responseData = response?.data;
-	const errorCode = responseData?.code as string | undefined;
-	const errorMessage = (responseData?.message || apiError.message) as string;
+	const errorCode = responseData?.code;
+	const errorMessage = responseData?.message || apiError.message;
 
 	let message = (errorCode && knownErrors[errorCode]) || errorMessage || 'Unknown error occurred';
 	let description = `API error: ${errorCode || 'unknown'} (HTTP ${status || 'n/a'})`;
