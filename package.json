@@ -21,13 +21,14 @@
 	},
 	"main": "index.js",
 	"scripts": {
-		"build": "npx rimraf dist && tsc && gulp build:icons",
-		"dev": "tsc --watch",
+		"build": "n8n-node build",
+		"dev": "n8n-node dev",
 		"format": "prettier nodes credentials --write",
-		"lint": "eslint nodes credentials package.json",
-		"lintfix": "eslint nodes credentials package.json --fix",
+		"lint": "n8n-node lint",
+		"lintfix": "n8n-node lint --fix",
 		"test": "jest",
-		"prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json"
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
 	},
 	"files": [
 		"dist"
@@ -43,20 +44,15 @@
 		]
 	},
 	"devDependencies": {
-		"@eslint/js": "^9.28.0",
+		"@n8n/node-cli": "^0.28.0",
 		"@types/jest": "^30.0.0",
-		"@typescript-eslint/parser": "~8.32.0",
-		"eslint": "^8.57.1",
-		"eslint-plugin-n8n-nodes-base": "^1.16.3",
-		"eslint-plugin-react": "^7.37.5",
-		"globals": "^16.2.0",
-		"gulp": "^5.0.0",
+		"eslint": "^9.39.4",
 		"jest": "^30.3.0",
 		"nock": "^14.0.12",
 		"prettier": "^3.5.3",
+		"release-it": "^20.0.1",
 		"ts-jest": "^29.4.9",
-		"typescript": "^5.8.2",
-		"typescript-eslint": "^8.33.0"
+		"typescript": "^5.8.2"
 	},
 	"peerDependencies": {
 		"n8n-workflow": "*"

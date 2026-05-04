@@ -3,7 +3,7 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	NodeConnectionType
+	NodeConnectionTypes,
 } from 'n8n-workflow';
 
 import { fullEnrichFields } from './FullEnrich.description';
@@ -21,6 +21,7 @@ export class FullEnrich implements INodeType {
 		version: [1, 2],
 		defaultVersion: 2,
 		description: 'Start a FullEnrich bulk enrichment request',
+		subtitle: '={{$parameter["enrichmentName"] || "Enrichment by n8n"}}',
 		defaults: {
 			name: 'FullEnrich',
 		},
@@ -30,11 +31,14 @@ export class FullEnrich implements INodeType {
 				required: true,
 			},
 		],
-		inputs: [NodeConnectionType.Main],
-		outputs: [NodeConnectionType.Main],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		properties: fullEnrichFields,
+		usableAsTool: true,
 	};
 
+	// continueOnFail() is handled inside execute() in FullEnrich.execute.ts
+	// eslint-disable-next-line @n8n/community-nodes/require-continue-on-fail
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const version = this.getNode().typeVersion;
 		return execute(this, version);

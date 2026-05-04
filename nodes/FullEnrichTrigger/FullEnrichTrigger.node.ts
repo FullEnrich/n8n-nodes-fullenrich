@@ -1,11 +1,73 @@
 import {
+	IDataObject,
 	IWebhookFunctions,
 	IWebhookResponseData,
 	INodeType,
 	INodeTypeDescription,
-	NodeConnectionType,
+	NodeConnectionTypes,
 	NodeOperationError,
 } from 'n8n-workflow';
+
+// Minimal shape of the V2 webhook payload — only fields the V1 mapping reads.
+interface V2SocialNetwork {
+	id?: number;
+	url?: string;
+	handle?: string;
+}
+
+interface V2Location {
+	region?: string;
+	city?: string;
+	country?: string;
+	country_code?: string;
+	line1?: string;
+	line2?: string;
+}
+
+interface V2Company {
+	name?: string;
+	description?: string;
+	domain?: string;
+	industry?: { main_industry?: string };
+	company_type?: string;
+	year_founded?: number;
+	headcount?: number;
+	headcount_range?: string;
+	social_profiles?: { professional_network?: V2SocialNetwork };
+	locations?: { headquarters?: V2Location };
+}
+
+interface V2Employment {
+	title?: string;
+	description?: string;
+	start_at?: string;
+	end_at?: string;
+	company?: V2Company;
+}
+
+interface V2Profile {
+	first_name?: string;
+	last_name?: string;
+	location?: { city?: string; region?: string; country?: string };
+	employment?: { current?: V2Employment; all?: V2Employment[] };
+	social_profiles?: { professional_network?: V2SocialNetwork };
+}
+
+interface V2ContactInfo {
+	most_probable_work_email?: { email?: string; status?: string };
+	most_probable_personal_email?: { email?: string; status?: string };
+	most_probable_phone?: { number?: string };
+	work_emails?: unknown[];
+	personal_emails?: unknown[];
+	phones?: unknown[];
+}
+
+export interface V2Row {
+	input?: { first_name?: string; last_name?: string; company_domain?: string };
+	profile?: V2Profile;
+	contact_info?: V2ContactInfo;
+	custom?: IDataObject;
+}
 
 function toMonthYear(value: unknown): { month: number; year: number } | null {
 	if (!value || typeof value !== 'string') return null;
@@ -22,7 +84,7 @@ function toMonthYear(value: unknown): { month: number; year: number } | null {
 }
 
 // V2's `employment.current` often carries only a subset (e.g. title) — fill holes from all[0]
-function pickEmployment(profile: Record<string, any> | undefined): Record<string, any> | undefined {
+function pickEmployment(profile: V2Profile | undefined): V2Employment | undefined {
 	const current = profile?.employment?.current;
 	const first = profile?.employment?.all?.[0];
 	if (!current?.title) return first;
@@ -36,7 +98,7 @@ function pickEmployment(profile: Record<string, any> | undefined): Record<string
 }
 
 // Map a single V2 data item back to V1 flat structure
-export function mapV2ToV1(row: Record<string, any>): Record<string, any> {
+export function mapV2ToV1(row: V2Row): Record<string, unknown> {
 	const employment = pickEmployment(row.profile);
 	const network = row.profile?.social_profiles?.professional_network;
 	const companyNetwork = employment?.company?.social_profiles?.professional_network;
@@ -118,11 +180,12 @@ export class FullEnrichTrigger implements INodeType {
 		version: [1, 2],
 		defaultVersion: 2,
 		description: 'Receives the enrichment result from FullEnrich',
+		subtitle: '=Enrichment Result',
 		defaults: {
 			name: 'FullEnrich Trigger',
 		},
 		inputs: [], // This is a trigger node, so it has no input
-		outputs: [NodeConnectionType.Main], // It sends data to the main output
+		outputs: [NodeConnectionTypes.Main], // It sends data to the main output
 		webhooks: [
 			{
 				name: 'default',
@@ -149,6 +212,7 @@ export class FullEnrichTrigger implements INodeType {
 				description: 'The events to listen to',
 			},
 		],
+		usableAsTool: true,
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
@@ -166,7 +230,7 @@ export class FullEnrichTrigger implements INodeType {
 
 		const items = isV2Payload ? body.data : body.datas;
 
-		const results = (items as Record<string, any>[]).map((dataItem) => {
+		const results = (items as V2Row[]).map((dataItem) => {
 			// V1 trigger: map V2 responses back to V1 structure for backward compatibility
 			// V2 trigger: pass through raw data as-is
 			const mapped = triggerVersion === 1 && isV2Payload ? mapV2ToV1(dataItem) : dataItem;
