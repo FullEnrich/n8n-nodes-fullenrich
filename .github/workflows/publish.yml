@@ -26,31 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check OIDC env
+      - name: Release
         run: |
-          echo "OIDC URL set: ${ACTIONS_ID_TOKEN_REQUEST_URL:+YES}"
-          echo "OIDC TOKEN set: ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:+YES}"
-          echo "npm version: $(npm --version)"
-          echo "node version: $(node --version)"
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Build
-        run: npm run build
-
-      - name: Check .npmrc
-        run: |
-          echo "--- ~/.npmrc ---"
-          cat ~/.npmrc 2>/dev/null || echo "(none)"
-          echo "--- ./.npmrc ---"
-          cat ./.npmrc 2>/dev/null || echo "(none)"
-          echo "--- npm config ---"
-          npm config list -l 2>&1 | grep -iE "registry|auth|provenance" || true
-
-      - name: Publish
-        run: npm publish --provenance --access public
+          [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+          npm run release
         env:
-          RELEASE_MODE: 'true'
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
