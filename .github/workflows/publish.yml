@@ -49,6 +49,8 @@ jobs:
           npm config list -l 2>&1 | grep -iE "registry|auth|provenance" || true
 
       - name: Publish
-        run: npm publish --provenance --access public --loglevel=verbose
+        run: npm publish --provenance --access public
         env:
           RELEASE_MODE: 'true'
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
