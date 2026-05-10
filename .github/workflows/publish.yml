@@ -41,3 +41,5 @@ jobs:
 
       - name: Publish
         run: npm publish --provenance --access public
+        env:
+          RELEASE_MODE: 'true'
