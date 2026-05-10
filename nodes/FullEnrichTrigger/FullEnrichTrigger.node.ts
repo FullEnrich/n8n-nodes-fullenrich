@@ -156,7 +156,7 @@ export function mapV2ToV1(row: V2Row): Record<string, unknown> {
 							city: hq?.city,
 							country: hq?.country,
 							country_code: hq?.country_code,
-							postal_code: null,
+							postal_code: '',
 							address_line_1: hq?.line1,
 							address_line_2: hq?.line2,
 						},
