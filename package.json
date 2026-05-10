@@ -17,7 +17,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/fullenrich/n8n-nodes-fullenrich.git"
+		"url": "https://github.com/FullEnrich/n8n-nodes-fullenrich.git"
 	},
 	"main": "index.js",
 	"scripts": {
