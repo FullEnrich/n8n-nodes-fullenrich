@@ -3,6 +3,7 @@ import {
 	ICredentialType,
 	INodeProperties,
 	ICredentialTestRequest,
+	Icon,
 } from 'n8n-workflow';
 import { baseUrl } from '../nodes/shared/constant';
 
@@ -10,6 +11,10 @@ export class FullEnrichApi implements ICredentialType {
 	name = 'fullEnrichApi';
 	displayName = 'FullEnrich API';
 	documentationUrl = 'https://docs.fullenrich.com/authentication';
+	icon: Icon = {
+		light: 'file:../nodes/fe-logo-light.svg',
+		dark: 'file:../nodes/fe-logo-dark.svg',
+	};
 	properties: INodeProperties[] = [
 		{
 			displayName: 'API Key',

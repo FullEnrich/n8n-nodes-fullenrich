@@ -1,9 +1,10 @@
-import { mapV2ToV1 } from '../nodes/FullEnrichTrigger/FullEnrichTrigger.node';
+import { mapV2ToV1 as _mapV2ToV1 } from '../nodes/FullEnrichTrigger/FullEnrichTrigger.node';
+// Tests use freeform fixtures; widen the signature locally so deep field access (e.g. `r.contact.profile.position`) doesn't require casting at every line.
+const mapV2ToV1 = _mapV2ToV1 as (row: any) => any;
 
 const v2Row = {
 	input: {
 		professional_network_url: 'https://www.linkedin.com/in/jdoe',
-		linkedin_url: 'https://www.linkedin.com/in/jdoe',
 		first_name: 'John',
 		last_name: 'Doe',
 		full_name: 'John Doe',
