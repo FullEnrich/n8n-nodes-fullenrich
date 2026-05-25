@@ -1,0 +1,65 @@
+name: 🐛 Bug report
+description: Report a problem with n8n-nodes-fullenrich
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! The more details you give us, the faster we can help.
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: What kind of issue?
+      options:
+        - Installation / package loading error
+        - Node not working as expected
+        - Webhook / trigger issue
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: n8n-version
+    attributes:
+      label: n8n version
+      description: Found in Settings → bottom of the sidebar, or run `n8n --version`
+      placeholder: e.g. 2.18.5
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How are you running n8n?
+      options:
+        - n8n Cloud
+        - Self-hosted (Docker / Docker Compose)
+        - Self-hosted (npm)
+        - n8n Desktop
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the issue
+      description: What happened? What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error message or logs
+      description: Paste any error messages or relevant n8n server logs here
+      render: shell
+
+  - type: checkboxes
+    id: tried
+    attributes:
+      label: Before submitting
+      options:
+        - label: I checked the [existing issues](https://github.com/FullEnrich/n8n-nodes-fullenrich/issues?q=is%3Aissue) and didn't find a duplicate
