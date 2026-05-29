@@ -29,6 +29,15 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: node-version
+    attributes:
+      label: n8n-nodes-fullenrich version
+      description: Found in Settings → Community nodes, or in your package.json
+      placeholder: e.g. 1.2.0
+    validations:
+      required: true
+
   - type: dropdown
     id: deployment
     attributes:
@@ -51,6 +60,18 @@ body:
       required: true
 
   - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Add the FullEnrich node
+        2. Configure it with...
+        3. Run the workflow
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
     id: logs
     attributes:
       label: Error message or logs
@@ -63,3 +84,4 @@ body:
       label: Before submitting
       options:
         - label: I checked the [existing issues](https://github.com/FullEnrich/n8n-nodes-fullenrich/issues?q=is%3Aissue) and didn't find a duplicate
+        - label: I am on the latest version of n8n-nodes-fullenrich
