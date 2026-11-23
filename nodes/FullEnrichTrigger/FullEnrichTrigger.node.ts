@@ -212,7 +212,6 @@ export class FullEnrichTrigger implements INodeType {
 				description: 'The events to listen to',
 			},
 		],
-		usableAsTool: true,
 	};
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {

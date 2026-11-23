@@ -38,7 +38,6 @@ export class FullEnrich implements INodeType {
 	};
 
 	// continueOnFail() is handled inside execute() in FullEnrich.execute.ts
-	// eslint-disable-next-line @n8n/community-nodes/require-continue-on-fail
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const version = this.getNode().typeVersion;
 		return execute(this, version);
